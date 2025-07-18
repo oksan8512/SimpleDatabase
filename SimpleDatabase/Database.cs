@@ -138,6 +138,199 @@ public class Database
         }
     }
 
+    
+    public async Task<List<User>> GetAllUsersAsync(int limit = 100, int offset = 0)
+    {
+        string selectSql = @"
+            SELECT id, firstname, lastname, email 
+            FROM users 
+            ORDER BY id 
+            LIMIT @Limit OFFSET @Offset;";
+
+        try
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand(selectSql, connection);
+            command.Parameters.AddWithValue("@Limit", limit);
+            command.Parameters.AddWithValue("@Offset", offset);
+
+            var users = new List<User>();
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                users.Add(new User
+                {
+                    Id = reader.GetInt32("id"),
+                    FirstName = reader.GetString("firstname"),
+                    LastName = reader.GetString("lastname"),
+                    Email = reader.GetString("email")
+                });
+            }
+
+            return users;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Помилка при отриманні списку користувачів: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<List<User>> SearchUsersByFirstNameAsync(string firstName)
+    {
+        string searchSql = @"
+            SELECT id, firstname, lastname, email 
+            FROM users 
+            WHERE LOWER(firstname) LIKE LOWER(@FirstName) 
+            ORDER BY firstname, lastname;";
+
+        try
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand(searchSql, connection);
+            command.Parameters.AddWithValue("@FirstName", $"%{firstName}%");
+
+            return await ExecuteSearchQuery(command);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Помилка при пошуку користувачів за іменем: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<List<User>> SearchUsersByLastNameAsync(string lastName)
+    {
+        string searchSql = @"
+            SELECT id, firstname, lastname, email 
+            FROM users 
+            WHERE LOWER(lastname) LIKE LOWER(@LastName) 
+            ORDER BY lastname, firstname;";
+
+        try
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand(searchSql, connection);
+            command.Parameters.AddWithValue("@LastName", $"%{lastName}%");
+
+            return await ExecuteSearchQuery(command);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Помилка при пошуку користувачів за прізвищем: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<List<User>> SearchUsersByEmailAsync(string email)
+    {
+        string searchSql = @"
+            SELECT id, firstname, lastname, email 
+            FROM users 
+            WHERE LOWER(email) LIKE LOWER(@Email) 
+            ORDER BY email;";
+
+        try
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand(searchSql, connection);
+            command.Parameters.AddWithValue("@Email", $"%{email}%");
+
+            return await ExecuteSearchQuery(command);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Помилка при пошуку користувачів за email: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<List<User>> SearchUsersAsync(string searchTerm)
+    {
+        string searchSql = @"
+            SELECT id, firstname, lastname, email 
+            FROM users 
+            WHERE LOWER(firstname) LIKE LOWER(@SearchTerm) 
+               OR LOWER(lastname) LIKE LOWER(@SearchTerm) 
+               OR LOWER(email) LIKE LOWER(@SearchTerm) 
+            ORDER BY firstname, lastname;";
+
+        try
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand(searchSql, connection);
+            command.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
+
+            return await ExecuteSearchQuery(command);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Помилка при загальному пошуку користувачів: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<User?> GetUserByIdAsync(int id)
+    {
+        string selectSql = @"
+            SELECT id, firstname, lastname, email 
+            FROM users 
+            WHERE id = @Id;";
+
+        try
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand(selectSql, connection);
+            command.Parameters.AddWithValue("@Id", id);
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return new User
+                {
+                    Id = reader.GetInt32("id"),
+                    FirstName = reader.GetString("firstname"),
+                    LastName = reader.GetString("lastname"),
+                    Email = reader.GetString("email")
+                };
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Помилка при отриманні користувача за ID: {ex.Message}", ex);
+        }
+    }
+
+    private async Task<List<User>> ExecuteSearchQuery(NpgsqlCommand command)
+    {
+        var users = new List<User>();
+        using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            users.Add(new User
+            {
+                Id = reader.GetInt32("id"),
+                FirstName = reader.GetString("firstname"),
+                LastName = reader.GetString("lastname"),
+                Email = reader.GetString("email")
+            });
+        }
+
+        return users;
+    }
+
     private DataTable CreateDataTable(List<User> users)
     {
         var dataTable = new DataTable();
