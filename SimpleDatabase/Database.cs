@@ -331,9 +331,79 @@ public class Database
         return users;
     }
 
+    
+    public async Task<bool> DeleteUserAsync(int id)
+    {
+        string deleteSql = "DELETE FROM users WHERE id = @Id;";
+
+        try
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand(deleteSql, connection);
+            command.Parameters.AddWithValue("@Id", id);
+
+            int rowsAffected = await command.ExecuteNonQueryAsync();
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Помилка при видаленні користувача: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<bool> UpdateUserAsync(int id, string firstName, string lastName, string email)
+    {
+        
+        var existingUser = await GetUserByIdAsync(id);
+        if (existingUser == null)
+        {
+            return false;
+        }
+
+        
+        string updatedFirstName = string.IsNullOrWhiteSpace(firstName) 
+            ? existingUser.FirstName : firstName.Trim();
+
+        string updatedLastName = string.IsNullOrWhiteSpace(lastName) 
+            ? existingUser.LastName : lastName.Trim();
+
+        string updatedEmail = string.IsNullOrWhiteSpace(email) 
+            ? existingUser.Email : email.Trim();
+
+        string updateSql = @"
+            UPDATE users 
+            SET firstname = @FirstName, 
+                lastname = @LastName, 
+                email = @Email 
+            WHERE id = @Id;";
+
+        try
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand(updateSql, connection);
+
+            command.Parameters.AddWithValue("@Id", id);
+            command.Parameters.AddWithValue("@FirstName", updatedFirstName);
+            command.Parameters.AddWithValue("@LastName", updatedLastName);
+            command.Parameters.AddWithValue("@Email", updatedEmail);
+
+            int rowsAffected = await command.ExecuteNonQueryAsync();
+            return rowsAffected > 0;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Помилка при оновленні користувача: {ex.Message}", ex);
+        }
+    }
+
     private DataTable CreateDataTable(List<User> users)
     {
         var dataTable = new DataTable();
+
         dataTable.Columns.Add("FirstName", typeof(string));
         dataTable.Columns.Add("LastName", typeof(string));
         dataTable.Columns.Add("Email", typeof(string));

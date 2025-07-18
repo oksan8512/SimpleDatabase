@@ -4,9 +4,6 @@ using SimpleDatabase;
 using System.Diagnostics;
 using Database = SimpleDatabase.Database;
 
-
-
-
 Console.InputEncoding = System.Text.Encoding.UTF8;
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
@@ -40,37 +37,30 @@ async Task CheckDatabaseConnection()
 {
     ConsoleHelper.WriteInfo("Перевірка з'єднання з базою даних...");
     bool connectionSuccessful = await databaseService.TestConnectionAsync();
-
     if (!connectionSuccessful)
     {
         throw new InvalidOperationException("Не вдалося підключитися до бази даних. Перевірте рядок підключення.");
     }
-
     ConsoleHelper.WriteSuccess("З'єднання з базою даних успішне.");
 }
 
 async Task CreateTable()
 {
     ConsoleHelper.WriteInfo("Підготовка таблиці Users...");
-
     await databaseService.CreateTableIfNotExistsAsync();
-
     ConsoleHelper.WriteSuccess("Таблиця Users готова до використання.");
 }
 
 async Task AddNewUsers()
 {
     int userCount = ConsoleHelper.GetUserCount();
-
     bool useBulkInsert = userCount >= DatabaseConfig.BulkInsertSettings.RecommendBulkInsertThreshold
         && ConsoleHelper.AskForBulkInsert();
 
     ConsoleHelper.WriteInfo($"Генерація {userCount} користувачів...");
-
     var users = userGenerator.GenerateUsers(userCount);
 
     var stopwatch = Stopwatch.StartNew();
-
     if (useBulkInsert)
     {
         ConsoleHelper.WriteInfo("Використовується масова вставка...");
@@ -99,6 +89,7 @@ async Task SearchAndViewUsers()
         switch (searchChoice)
         {
             case 1: 
+
                 var (limit, offset) = ConsoleHelper.GetPaginationParams();
                 stopwatch.Start();
 
@@ -138,7 +129,7 @@ async Task SearchAndViewUsers()
                 ConsoleHelper.DisplayUsers(usersByEmail, stopwatch.ElapsedMilliseconds);
                 break;
 
-            case 5:
+            case 5: 
                 string searchTerm = ConsoleHelper.GetSearchTerm("текст для пошуку");
                 stopwatch.Start();
 
@@ -148,7 +139,7 @@ async Task SearchAndViewUsers()
                 ConsoleHelper.DisplayUsers(foundUsers, stopwatch.ElapsedMilliseconds);
                 break;
 
-            case 6: 
+            case 6:
                 int userId = ConsoleHelper.GetUserId();
                 stopwatch.Start();
 
@@ -156,6 +147,14 @@ async Task SearchAndViewUsers()
                 stopwatch.Stop();
 
                 ConsoleHelper.DisplayUser(user, stopwatch.ElapsedMilliseconds);
+                break;
+
+            case 7:
+                await EditUser();
+                break;
+
+            case 8: 
+                await DeleteUser();
                 break;
 
             case 0: 
@@ -167,4 +166,70 @@ async Task SearchAndViewUsers()
             break;
         }
     }
+}
+
+async Task EditUser()
+{
+    int userId = ConsoleHelper.GetUserId();
+    var stopwatch = Stopwatch.StartNew();
+
+    
+    var existingUser = await databaseService.GetUserByIdAsync(userId);
+    stopwatch.Stop();
+
+    if (existingUser == null)
+    {
+        ConsoleHelper.WriteError("Користувач з таким ID не знайдений.");
+        ConsoleHelper.WriteInfo($"Час пошуку: {stopwatch.ElapsedMilliseconds} мс");
+        return;
+    }
+
+    
+    var (firstName, lastName, email) = ConsoleHelper.GetUserUpdateData(existingUser);
+
+    
+    if (!ConsoleHelper.ConfirmAction("редагувати", existingUser))
+    {
+        ConsoleHelper.WriteInfo("Редагування скасовано.");
+        return;
+    }
+
+    
+    stopwatch.Restart();
+
+    bool updateSuccess = await databaseService.UpdateUserAsync(userId, firstName, lastName, email);
+    stopwatch.Stop();
+
+    ConsoleHelper.DisplayUpdateResult(updateSuccess, stopwatch.ElapsedMilliseconds);
+}
+
+async Task DeleteUser()
+{
+    int userId = ConsoleHelper.GetUserId();
+    var stopwatch = Stopwatch.StartNew();
+
+    
+    var existingUser = await databaseService.GetUserByIdAsync(userId);
+    stopwatch.Stop();
+
+    if (existingUser == null)
+    {
+        ConsoleHelper.WriteError("Користувач з таким ID не знайдений.");
+        ConsoleHelper.WriteInfo($"Час пошуку: {stopwatch.ElapsedMilliseconds} мс");
+        return;
+    }
+
+    
+    if (!ConsoleHelper.ConfirmAction("видалити", existingUser))
+    {
+        ConsoleHelper.WriteInfo("Видалення скасовано.");
+        return;
+    }
+
+    
+    stopwatch.Restart();
+    bool deleteSuccess = await databaseService.DeleteUserAsync(userId);
+    stopwatch.Stop();
+
+    ConsoleHelper.DisplayDeleteResult(deleteSuccess, stopwatch.ElapsedMilliseconds);
 }

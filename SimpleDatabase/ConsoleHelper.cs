@@ -14,10 +14,12 @@ public static class ConsoleHelper
         {
             Console.Write("Введіть кількість користувачів для генерації: ");
             string input = Console.ReadLine();
+
             if (int.TryParse(input, out int count) && count > 0)
             {
                 return count;
             }
+
             WriteError("Будь ласка, введіть коректне число більше 0.");
         }
     }
@@ -26,7 +28,9 @@ public static class ConsoleHelper
     {
         Console.WriteLine("Для великої кількості записів рекомендується використовувати масову вставку.");
         Console.Write("Використовувати масову вставку? (y/n): ");
+
         string input = Console.ReadLine()?.ToLower();
+
         return input == "y" || input == "yes" || input == "так" || input == "т";
     }
 
@@ -34,6 +38,7 @@ public static class ConsoleHelper
     {
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine($" {message}");
+
         Console.ResetColor();
         Console.WriteLine();
     }
@@ -42,6 +47,7 @@ public static class ConsoleHelper
     {
         Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine($" {message}");
+
         Console.ResetColor();
         Console.WriteLine();
     }
@@ -50,6 +56,7 @@ public static class ConsoleHelper
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine($" {message}");
+
         Console.ResetColor();
         Console.WriteLine();
     }
@@ -58,6 +65,7 @@ public static class ConsoleHelper
     {
         Console.ForegroundColor = ConsoleColor.Yellow;
         Console.WriteLine($" {message}");
+
         Console.ResetColor();
         Console.WriteLine();
     }
@@ -67,6 +75,7 @@ public static class ConsoleHelper
         Console.WriteLine("=".PadRight(50, '='));
         Console.WriteLine("    Генератор користувачів з Bogus");
         Console.WriteLine("=".PadRight(50, '='));
+
         Console.WriteLine();
     }
 
@@ -74,7 +83,9 @@ public static class ConsoleHelper
     {
         Console.WriteLine();
         WriteSuccess($"Успішно додано {userCount} користувачів у базу даних!");
+
         var elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+
         Console.WriteLine($"Час виконання: {elapsedMilliseconds} мс ({elapsed:mm\\:ss\\.fff})");
         Console.WriteLine($"Швидкість: {(userCount / elapsed.TotalSeconds):F2} користувачів/сек");
         Console.WriteLine($"Загальна кількість користувачів у БД: {totalUsers}");
@@ -93,6 +104,7 @@ public static class ConsoleHelper
         Console.WriteLine("=".PadRight(50, '='));
         Console.WriteLine("    Пошук та перегляд користувачів");
         Console.WriteLine("=".PadRight(50, '='));
+
         Console.WriteLine();
     }
 
@@ -107,15 +119,19 @@ public static class ConsoleHelper
             Console.WriteLine("4. Пошук за email");
             Console.WriteLine("5. Загальний пошук");
             Console.WriteLine("6. Пошук за ID");
+            Console.WriteLine("7. Редагувати користувача");
+            Console.WriteLine("8. Видалити користувача");
             Console.WriteLine("0. Повернутися до головного меню");
             Console.Write("Ваш вибір: ");
 
             string input = Console.ReadLine();
-            if (int.TryParse(input, out int choice) && choice >= 0 && choice <= 6)
+
+            if (int.TryParse(input, out int choice) && choice >= 0 && choice <= 8)
             {
                 return choice;
             }
-            WriteError("Будь ласка, введіть число від 0 до 6.");
+
+            WriteError("Будь ласка, введіть число від 0 до 8.");
         }
     }
 
@@ -125,10 +141,12 @@ public static class ConsoleHelper
         {
             Console.Write($"Введіть {fieldName} для пошуку: ");
             string input = Console.ReadLine()?.Trim();
+
             if (!string.IsNullOrEmpty(input))
             {
                 return input;
             }
+
             WriteError($"Будь ласка, введіть {fieldName}.");
         }
     }
@@ -139,10 +157,12 @@ public static class ConsoleHelper
         {
             Console.Write("Введіть ID користувача: ");
             string input = Console.ReadLine();
+
             if (int.TryParse(input, out int id) && id > 0)
             {
                 return id;
             }
+
             WriteError("Будь ласка, введіть коректне число більше 0.");
         }
     }
@@ -159,7 +179,7 @@ public static class ConsoleHelper
         Console.WriteLine();
         WriteSuccess($"Знайдено {users.Count} користувачів:");
         WriteInfo($"Час пошуку: {searchTimeMs} мс");
-
+        
         Console.WriteLine();
         Console.WriteLine($"{"ID",-5} {"Ім'я",-15} {"Прізвище",-15} {"Email",-30}");
         Console.WriteLine(new string('-', 65));
@@ -183,7 +203,7 @@ public static class ConsoleHelper
         Console.WriteLine();
         WriteSuccess("Користувач знайдений:");
         WriteInfo($"Час пошуку: {searchTimeMs} мс");
-
+        
         Console.WriteLine();
         Console.WriteLine($"ID: {user.Id}");
         Console.WriteLine($"Ім'я: {user.FirstName}");
@@ -195,18 +215,22 @@ public static class ConsoleHelper
     public static (int limit, int offset) GetPaginationParams()
     {
         Console.WriteLine("Налаштування пагінації:");
+        
+        int limit = 50;
 
-        int limit = 50; // За замовчуванням
         Console.Write($"Кількість записів на сторінку (за замовчуванням {limit}): ");
         string limitInput = Console.ReadLine();
+
         if (int.TryParse(limitInput, out int parsedLimit) && parsedLimit > 0)
         {
             limit = parsedLimit;
         }
 
-        int offset = 0; // За замовчуванням
+        int offset = 0; 
+
         Console.Write($"Пропустити записів (за замовчуванням {offset}): ");
         string offsetInput = Console.ReadLine();
+
         if (int.TryParse(offsetInput, out int parsedOffset) && parsedOffset >= 0)
         {
             offset = parsedOffset;
@@ -221,6 +245,69 @@ public static class ConsoleHelper
         Console.Write("Бажаете продовжити пошук? (y/n): ");
         string input = Console.ReadLine()?.ToLower();
         return input == "y" || input == "yes" || input == "так" || input == "т";
+    }
+
+    
+    public static (string firstName, string lastName, string email) GetUserUpdateData(User currentUser)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Редагування користувача:");
+        Console.WriteLine($"Поточні дані: {currentUser.FirstName} {currentUser.LastName} ({currentUser.Email})");
+        Console.WriteLine();
+        Console.WriteLine("Введіть нові дані (залиште порожнім для збереження поточного значення):");
+        Console.WriteLine();
+
+        Console.Write($"Ім'я (поточне: {currentUser.FirstName}): ");
+        string firstName = Console.ReadLine() ?? "";
+
+        Console.Write($"Прізвище (поточне: {currentUser.LastName}): ");
+        string lastName = Console.ReadLine() ?? "";
+
+        Console.Write($"Email (поточний: {currentUser.Email}): ");
+        string email = Console.ReadLine() ?? "";
+
+        return (firstName, lastName, email);
+    }
+
+    public static bool ConfirmAction(string action, User user)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"Ви впевнені, що хочете {action} користувача:");
+        Console.WriteLine($"ID: {user.Id}");
+        Console.WriteLine($"Ім'я: {user.FirstName}");
+        Console.WriteLine($"Прізвище: {user.LastName}");
+        Console.WriteLine($"Email: {user.Email}");
+        Console.WriteLine();
+        Console.Write($"Підтвердити {action}? (y/n): ");
+        
+        string input = Console.ReadLine()?.ToLower();
+        return input == "y" || input == "yes" || input == "так" || input == "т";
+    }
+
+    public static void DisplayUpdateResult(bool success, long operationTimeMs)
+    {
+        if (success)
+        {
+            WriteSuccess("Користувач успішно оновлений!");
+        }
+        else
+        {
+            WriteError("Помилка при оновленні користувача.");
+        }
+        WriteInfo($"Час виконання операції: {operationTimeMs} мс");
+    }
+
+    public static void DisplayDeleteResult(bool success, long operationTimeMs)
+    {
+        if (success)
+        {
+            WriteSuccess("Користувач успішно видалений!");
+        }
+        else
+        {
+            WriteError("Помилка при видаленні користувача або користувач не знайдений.");
+        }
+        WriteInfo($"Час виконання операції: {operationTimeMs} мс");
     }
 
     public static int GetMainMenuChoice()
